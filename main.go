@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
 )
 
 func getUrls() []string {
@@ -15,6 +16,15 @@ func getUrls() []string {
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
 		url := scanner.Text()
+		match, err := regexp.MatchString(
+			`^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$`, url)
+		if match == false {
+			fmt.Println("ERROR.Check URL", url)
+			break
+		}
+		if err != nil {
+			fmt.Errorf("ERROR", err)
+		}
 		urls = append(urls, url)
 	}
 	return urls
