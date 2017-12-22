@@ -8,49 +8,67 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sync"
+	"time"
 )
 
-func getUrls() []string {
-	var urls []string
+func main() {
+	urls := make(chan string)
+	threadpool := make(chan struct{}, 4)
+	var totalCount int
+
+	workers := &sync.WaitGroup{}
+
+	go func() {
+		for {
+			url := <-urls
+
+			workers.Add(1)
+
+			threadpool <- struct{}{}
+			go func(url string) {
+				defer workers.Done()
+				countForOneUrl := calculateCount(url)
+				totalCount += countForOneUrl
+				<-threadpool
+				fmt.Printf("URL: %s, Count: %d \n", url, countForOneUrl)
+			}(url)
+		}
+	}()
+
 	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
 		url := scanner.Text()
 		match, err := regexp.MatchString(
 			`^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$`, url)
 		if match == false {
-			fmt.Println("ERROR.Check URL", url)
-			break
+			fmt.Errorf("ERROR. Check URL", url)
 		}
 		if err != nil {
 			fmt.Errorf("ERROR", err)
 		}
-		urls = append(urls, url)
+		urls <- url
 	}
-	return urls
+
+	workers.Wait()
+
+	time.Sleep(time.Second)
+
+	fmt.Println("Total", totalCount)
+	fmt.Println("End of the program\n")
 }
 
-func calculateCount(urls []string) int {
-	var count int
+func calculateCount(url string) int {
 	need := "Go"
 	needBytes := []byte(need)
-	for _, url := range urls {
-		resp, err := http.Get(url)
-		if err != nil {
-			fmt.Errorf("ERROR", err)
-		}
-		text, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Errorf("ERROR", err)
-		}
-		count = bytes.Count(text, needBytes)
-		fmt.Printf("Count for %s is %d \n", url, count)
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Errorf("ERROR", err)
 	}
+	text, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Errorf("ERROR", err)
+	}
+	count := bytes.Count(text, needBytes)
 	return count
-}
-
-func main() {
-	urls := getUrls()
-	count := calculateCount(urls)
-	fmt.Println(count)
 }
