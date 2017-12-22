@@ -59,16 +59,16 @@ func main() {
 }
 
 func calculateCount(url string) int {
-	need := "Go"
-	needBytes := []byte(need)
+	needToFind := "Go"
+	needToFindInBytes := []byte(needToFind)
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Errorf("ERROR", err)
 	}
-	text, err := ioutil.ReadAll(resp.Body)
+	textFromPage, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Errorf("ERROR", err)
 	}
-	count := bytes.Count(text, needBytes)
+	count := bytes.Count(textFromPage, needToFindInBytes)
 	return count
 }
