@@ -9,13 +9,14 @@ import (
 	"os"
 	"regexp"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 func main() {
 	urls := make(chan string)
 	threadpool := make(chan struct{}, 4)
-	var totalCount int
+	var totalCount int64
 
 	workers := &sync.WaitGroup{}
 
@@ -28,8 +29,10 @@ func main() {
 			threadpool <- struct{}{}
 			go func(url string) {
 				defer workers.Done()
-				countForOneUrl := calculateCount(url)
-				totalCount += countForOneUrl
+				var countForOneUrl int64
+				countForOneUrl = calculateCount(url)
+				atomic.AddInt64(&totalCount, countForOneUrl)
+				time.Sleep(time.Microsecond)
 				<-threadpool
 				fmt.Printf("URL: %s, Count: %d \n", url, countForOneUrl)
 			}(url)
@@ -54,11 +57,13 @@ func main() {
 
 	time.Sleep(time.Second)
 
-	fmt.Println("Total", totalCount)
+	totalCountFinal := atomic.LoadInt64(&totalCount)
+	fmt.Printf("Total count %d \n", totalCountFinal)
 	fmt.Println("End of the program\n")
 }
 
-func calculateCount(url string) int {
+func calculateCount(url string) int64 {
+	var countInInt64 int64
 	needToFind := "Go"
 	needToFindInBytes := []byte(needToFind)
 	resp, err := http.Get(url)
@@ -70,5 +75,6 @@ func calculateCount(url string) int {
 		fmt.Errorf("ERROR", err)
 	}
 	count := bytes.Count(textFromPage, needToFindInBytes)
-	return count
+	countInInt64 = int64(count)
+	return countInInt64
 }
