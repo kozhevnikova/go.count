@@ -76,5 +76,6 @@ func calculateCount(url string) int64 {
 	}
 	count := bytes.Count(textFromPage, needToFindInBytes)
 	countInInt64 = int64(count)
+	resp.Body.Close()
 	return countInInt64
 }
