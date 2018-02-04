@@ -10,7 +10,7 @@ echo "https://golang.org\nhttps://github.com/golang" | go run main.go
 ```
 ## Returnes
 
-URL: https://golang.org, Count  9
-URL: https://github.com/golang, Count 57
-Total count 66
-End of the program
+URL: https://golang.org, Count  9 <br>
+URL: https://github.com/golang, Count 57 <br>
+Total count 66 <br>
+End of the program <br>
